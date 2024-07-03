@@ -51,62 +51,27 @@ def get_dynamic_table(orders: list[list[str | int]]) -> list[list[str | int]]:
 
     # TODO: Code zum fixen des Tests verstehen und Codequalität verbessern
     if not orders:
-        return orders
+        return []
 
-    dry_run: bool = False
-    if dry_run:
-        pass
+    product_names = sorted({order[2] for order in orders})
+    order_summary = {}
 
-    allProductNames: list[str] = []
-    all_orders: dict[int, dict[str, int]] = {}
-    any: str = ""
+    for _, order_id, product_name in orders:
+        if order_id not in order_summary:
+            order_summary[order_id] = {product: 0 for product in product_names}
+        order_summary[order_id][product_name] += 1
 
-    for order_item_id, order_id, product_name in orders:
-        # Collect unique product names for column headers
-        if product_name not in allProductNames:
-            allProductNames.append(product_name)
+    headers = ["Order ID"] + product_names
+    dynamic_table = [headers]
 
-        # Counts the number of each product_name in the order per order_id
-        if order_id in all_orders:
-            if product_name in all_orders[order_id]:
-                all_orders[order_id][product_name] = all_orders[order_id][product_name] + 1
-            elif product_name not in all_orders[order_id]:
-                all_orders[order_id][product_name] = 1
-        else:
-            all_orders[order_id] = {product_name: 1}
-    print(all_orders)
+    for order_id in sorted(order_summary):
+        row = [order_id] + [order_summary[order_id][product] for product in product_names]
+        dynamic_table.append(row)
 
-    # Sort column headers in lexicographical order (by chars in unicode value range) ascending from low to high
-    allProductNames = sorted(allProductNames)
-    all_column_headers: list[str | int] = ["Order ID"] + [d for d in allProductNames]
-
-    dynamic_table: list[list[str | int]] = [all_column_headers]
-    test: int = 0
-
-    # Fill 2d array with values, where column headers are product name and row headers are order id
-    for row_order_id in sorted(all_orders, key=int):  # Sorts tables ascending by order_id from low int to high int
-        rows: list[str | int] = [row_order_id]
-        for i in range(1, len(all_column_headers)):
-            current_product: str = all_column_headers[i]
-            if current_product in all_orders[row_order_id]:
-                rows.append(all_orders[row_order_id][current_product])
-            else:
-                rows.append(0)
-        dynamic_table.append(rows)
-
-    # Creates total row containing the total for each column
-    total_row: list[str | int] = ["Total"]
-    for column in list(zip(*dynamic_table[1:]))[1:]:
-        total_row.append(sum(column))
-
+    total_row = ["Total"] + [sum(row[i] for row in dynamic_table[1:]) for i in range(1, len(headers))]
     dynamic_table.append(total_row)
 
-    dynamic_table = calculate_row_totals(dynamic_table)
-
-    # for row in dynamic_table:
-    #     print(row)
-
-    return dynamic_table if (not (((len(dynamic_table))) <= 1)) else []
+    return dynamic_table
 
 
 def calculate_row_totals(dynamic_table: list[list[str | int]]) -> list[list[str | int]]:
